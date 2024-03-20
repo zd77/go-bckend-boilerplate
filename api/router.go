@@ -2,18 +2,31 @@ package api
 
 import (
 	"fmt"
-	"net/http"
+	"go-boilerplate/stores"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-func RouterApi() http.Handler {
-	fmt.Println("Router api")
-	router := http.NewServeMux()
-	router.Handle("/api/", http.StripPrefix("/api", apiRouter()))
-	return router
+type RouterDependencies struct {
+	TaskStore stores.TaskStore
+	UserStore stores.UserStore
 }
 
-func apiRouter() http.Handler {
-	router := http.NewServeMux()
-	router.HandleFunc("/tasks/", HandleGetTasks)
-	return router
+func RouterApi(app *fiber.App, dependencies RouterDependencies) {
+	fmt.Println("Configurando rutas principales")
+	apiGroup := app.Group("/api")
+	configureTaskRoutes(apiGroup, dependencies.TaskStore)
+	configureUserRoutes(apiGroup, dependencies.UserStore)
+}
+
+func configureTaskRoutes(apiGroup fiber.Router, taskStore stores.TaskStore) {
+	fmt.Println("Configurando rutas de tareas")
+	taskHandler := NewTaskHandler(taskStore)
+	apiGroup.Get("/tasks", taskHandler.HandleGetTasks)
+}
+
+func configureUserRoutes(apiGroup fiber.Router, userStore stores.UserStore) {
+	fmt.Println("Configurando rutas de usuarios")
+	taskHandler := NewUserHandler(userStore)
+	apiGroup.Get("/users", taskHandler.HandlerGetUsers)
 }

@@ -5,10 +5,11 @@ import (
 	"go-boilerplate/api"
 	"go-boilerplate/config"
 	"go-boilerplate/db"
+	"go-boilerplate/stores"
 	"log"
-	"net/http"
 	"os"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -16,22 +17,28 @@ func main() {
 	fmt.Println("Boilerplate net/http for GO")
 
 	cfg := config.LoadConfig()
+	app := fiber.New()
 
-	_, err := db.ConnectMongoDb(cfg.MongoUrl)
+	mongoClient, err := db.ConnectMongoDb(cfg.MongoUrl)
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = db.ConnectPostgresDb(cfg.PostgresUrl)
-	if err != nil {
-		panic(err)
+	// _, err = db.ConnectPostgresDb(cfg.PostgresUrl)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	routerDeps := api.RouterDependencies{
+		TaskStore: stores.NewTaskStore(mongoClient),
+		UserStore: stores.NewUserStore(mongoClient),
 	}
 
-	router := api.RouterApi()
+	api.RouterApi(app, routerDeps)
 
 	port := os.Getenv("PORT")
 	fmt.Printf("Server listening on port %s\n", port)
-	http.ListenAndServe(port, router)
+	app.Listen(port)
 }
 
 func init() {
